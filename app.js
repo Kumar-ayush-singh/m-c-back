@@ -7,16 +7,22 @@ const helmet = require("helmet");
 const xss = require("xss-clean");
 const cors = require("cors");
 const rateLimiter = require("express-rate-limit");
-const http = require("http");
+
 const connectDb = require("./db/connect");
 const chatRouter = require("./router/chat");
 const messageRouter = require("./router/message");
 const authRouter = require("./router/auth");
 const userRouter = require("./router/user");
+const consoleError = require("./router/showError");
 
-const message = require("./models/message");
-const user = require("./models/user");
-const conversation = require("./models/conversation");
+
+
+const message = require("./models/message")
+const user = require("./models/user")
+const conversation = require("./models/conversation")
+
+
+
 
 // const orderRouter = require("./router/order");
 app.set("trust proxy", 1); //for huruko
@@ -40,131 +46,161 @@ app.use("/api/chat", chatRouter);
 app.use("/api/message", messageRouter);
 
 app.get("/", async (req, res) => {
-  conversation.find({}, function (err, result) {
+
+  conversation.find({}, function(err, result) {
     if (err) {
       console.log(err);
     } else {
-      user.find({}, function (err, result1) {
+     user.find({}, function(err, result1) {
         if (err) {
           console.log(err);
         } else {
-          message.find({}, function (err, result2) {
+          message.find({}, function(err, result2) {
             if (err) {
               console.log(err);
             } else {
-              res.json({
-                conversation: result,
-                user: result1,
-                message: result2,
-              });
+              res.json({conversation: result, user: result1, message: result2});
             }
           });
         }
       });
     }
   });
+
+  // await conversation.remove({});
+  // await user.remove({});
+  // await message.remove({});
 });
 
 const port = process.env.PORT || 3000;
-// let server = null;
-// var server = ;
+
 const start = async () => {
   try {
     await connectDb(process.env.MONGO_URL);
-    // server = app.listen(port, () =>
-    //   console.log(`Server is listening on port ${port}...`)
-    // );
-
-    // console.log(server);
+    
   } catch (error) {
     console.log(error);
   }
 };
-var socket = require("socket.io");
+const server = app.listen(port, () =>
+  console.log(`Server is listening on port ${port}...`)
+);
 
-var server = app.listen(3000, function () {
-  console.log("listening for requests on port 3000,");
-});
+
+
+//socket.io
 const io = require("socket.io")(server, {
-  cors: {
-    origin: "*",
-  },
+  cors: "*",
 });
-// let io = socket(server);
-let userArr = [];
-const addUser = (userId, socketId) => {
-  if (userArr.some((u) => u.userId === userId)) return;
 
-  userArr.push({ userId, socketId });
-  console.log(userArr);
-};
-const removeUser = (socketId) => {
-  userArr = userArr.filter((i) => i !== socketId);
-};
-const getUser = (id) => {
-  let a = userArr.find((user) => user.userId === id);
-  console.log(a);
-  return a;
-  // const data = await user.find({ _id: id });
-};
-io.on("connection", function (socket) {
-  // console.log(`${socket.id} is connected`);
-  try {
-    // take user and socket id from client
-    socket.on("setup", (userdata) => {
-      if (userdata) {
-        // socket.join(userdata.userId);
-        // console.log(userdata.userId);
-        // socket.emit("connected");
-        addUser(userdata.userId, socket.id);
-        io.emit("getUsers", userArr);
-        console.log(userArr);
+
+//all connected users
+const onlineUsers = {};
+
+
+io.on("connection", (socket) => {
+  console.log(socket.id);
+
+  //for registering user as online
+  socket.on("register-connection", ({ userId, socketId }, callback) => {
+    onlineUsers[userId] = socketId;
+  
+    socket.broadcast.emit("new-user-connected", userId);
+    console.log(onlineUsers);
+    callback({msg: "registered", onlineUsers: onlineUsers});
+  })
+
+
+  //for receiveing and forwarding messages
+  socket.on("client-send-msg", async ({ chatId, senderId, receiverId, text }, callback) => {
+    
+    const req = {
+      "chatId": chatId,
+      "senderId": senderId,
+      "text": text,
+    };
+    const newMessage = new message(req);
+  
+    try {
+      const saveMessage = await newMessage.save();
+      callback({
+        status: 200,
+        data: saveMessage
+      });
+
+      //now updating chat for this message
+      const chat = await conversation.findById(chatId).exec();
+      chat.lastMessage = saveMessage._id;
+      chat.unreadMsgCount++;
+      const newmsg = await chat.save();
+      console.warn(`value after update is ${newmsg.unreadMsgCount}`);
+      console.log(newmsg);
+
+      //forwarding message if receiver is online
+      console.log(`message for ${receiverId} is emmited to socket : ${onlineUsers[receiverId]}`)
+      if(onlineUsers[receiverId]){
+        socket.to(onlineUsers[receiverId]).emit("server-send-msg", saveMessage);
       }
-      console.log("running");
-    });
-    // socket.emit("getUsers", userArr);
-    socket.on("joinChat", (room) => {
-      socket.join(room);
-      // console.log(`room chat id is ${room}`);
-    });
-    socket.on("sendMsg", ({ userId, receiverId, text }) => {
-      // console.log(newMsg);
-      const reciver = getUser(receiverId);
-      // console.log(reciver);
-      console.log(reciver.socketId);
-      io.to(reciver.socketId).emit("getMsg", {
-        senderId: userId,
-        text: text,
+    } catch (error) {
+      consoleError({
+        status: 500,
+        error: error,
       });
-    });
-    socket.on("disconnect", () => {
-      removeUser(socket.id);
-      // addUser(userdata.userId, socket.id);
-      io.emit("getUsers", userArr);
-    });
-  } catch (error) {
-    app.use((req, res) => {
-      res.status(500).json({
-        msg: "error occur",
+      callback({ 
+        error : {
+          message: error.message,
+        },
       });
-    });
-  }
-});
-// io.emit("getUsers", userArr);
-// const io = require("socket.io")(, {
-//   pingTimeout: 60000,
-//   cors: {
-//     origin: "http://localhost:3000",
-//     // credentials: true,
-//   },
-// });
-// const io = require("socket.io")(8900, {
-//   cors: {
-//     origin: "http://localhost:3000",
-//   },
-// });
+    }
+  })
 
-// io.on("connection", () => {
-//   console.log("connected to socket");
-// });
+  //handling viewed message
+  socket.on("message-viewed", async(chatId, lastViewedMessageId, callback) => {
+    try{
+      const chat = await conversation.findById(chatId).exec();
+      chat.lastViewedMessage = lastViewedMessageId;
+      chat.unreadMsgCount = 0;
+      await chat.save();
+      callback({status:200});
+    } catch(error) {
+      consoleError(error);
+      callback({status:500});
+    }
+  })
+
+
+
+  //handeling when user disconnect
+  socket.on("disconnect", (reason) => {
+    console.warn(`${socket.id} is now desconnected and reason is ${reason}`);
+    const disconnectedUserId = Object.keys(onlineUsers).filter( (key) => onlineUsers[key] === socket.id)[0];
+    socket.broadcast.emit("user-disconnected", disconnectedUserId);
+    delete onlineUsers[disconnectedUserId];
+  })
+
+  socket.on("disconnecting", (reason) => {
+    console.warn(`${socket.id} is now desconnecting ------ and reason is ${reason}`);
+    // socket.broadcast.emit("")
+  })
+
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 start();

@@ -4,24 +4,31 @@ const Message = require("../models/message");
 const consoleError = require("./showError");
 
 
+
+/**this in now handled by socket.io */
 // add
-router.post("/", async (req, res) => {
+// router.post("/", async (req, res) => {
 
-  console.log("\n\nRoute /message/ :-");
-  console.log(`\t>> Request Body >>>>`);
-  console.log(req.body);
+//   console.log("\n\nRoute /message/ :-");
+//   console.log(`\t>> Request Body >>>>`);
+//   console.log(req.body);
 
-  const newMessage = new Message(req.body);
+//   const newMessage = new Message(req.body);
 
-  try {
-    const saveMessage = await newMessage.save();
-    res.status(200).json(saveMessage);
-  } catch (error) {
-    consoleError(error);
-    res.status(500).json(error.message);
-  }
+//   try {
+//     const saveMessage = await newMessage.save();
+//     res.status(200).json(saveMessage);
 
-});
+//     //now updating this at chat collection
+//     const chat = await Conversation.findById(req.body.chatId);
+//     chat.lastMessageId = saveMessage._id;
+//     await chat.save();
+//   } catch (error) {
+//     consoleError(error);
+//     res.status(500).json(error.message);
+//   }
+
+// });
 
 
 // get

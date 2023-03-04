@@ -62,7 +62,7 @@ router.post("/sign-in", async (req, res) => {
     console.log(isPasswordCorrect?"Password matched":"Password not match");
     
     const token = await user.createJwt();
-    res.status(200).json({ user: { userName: user.name, userId: user._id }, token });
+    res.status(200).json({ user: { userName: user.name, userId: user._id, email: email }, token });
 });
 
 module.exports = router;
