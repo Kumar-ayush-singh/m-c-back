@@ -3,8 +3,13 @@ const express = require("express");
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const consoleError = require("./showError");
+const auth = require("../middleware/auth");
 
 const router = express.Router();
+
+
+//adding auth middleware
+router.use(auth);
 
 
 router.route("/update-user/:id")

@@ -1,11 +1,18 @@
 const express = require("express");
+const auth = require("../middleware/auth");
 const router = express.Router();
 const Message = require("../models/message");
 const consoleError = require("./showError");
 
 
 
+//adding auth middleware
+router.use(auth);
+
+
+
 /**this in now handled by socket.io */
+
 // add
 // router.post("/", async (req, res) => {
 

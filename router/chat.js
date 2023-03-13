@@ -1,9 +1,13 @@
 const express = require("express");
+const auth = require("../middleware/auth");
 const router = express.Router();
 const chat = require("../models/conversation");
 const user = require("../models/user");
 const consoleError = require("./showError");
 
+
+//addding auth middleware
+router.use(auth);
 
 
 // new chat
