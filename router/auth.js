@@ -15,7 +15,7 @@ router.post("/sign-up", async (req, res) => {
         const user = await User.create({ ...req.body });
         const token = user.createJwt();
         res.status(200).json({
-            user: { userName: user.name, email: user.email, userId: user._id },
+            user: { userName: user.name, email: user.email, userId: user._id, avatar: user.avatar },
             token,
         });
     }
@@ -62,7 +62,7 @@ router.post("/sign-in", async (req, res) => {
     console.log(isPasswordCorrect?"Password matched":"Password not match");
     
     const token = await user.createJwt();
-    res.status(200).json({ user: { userName: user.name, userId: user._id, email: email }, token });
+    res.status(200).json({ user: { userName: user.name, userId: user._id, email: email, avatar: user.avatar }, token });
 });
 
 module.exports = router;

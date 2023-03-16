@@ -74,7 +74,7 @@ router.get("/:userId", async (req, res) => {
       const singleChatJO = singleChat.toObject();
 
       const otherMemberId = ( singleChatJO.members[0] === req.params.userId ? singleChatJO.members[1] : singleChatJO.members[0]);
-      singleChatJO.otherMember = await user.findById(otherMemberId).select("name");
+      singleChatJO.otherMember = await user.findById(otherMemberId).select("name",  "avatar");
 
       delete singleChatJO.members;
       console.log(singleChatJO);

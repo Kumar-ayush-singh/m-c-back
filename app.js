@@ -67,9 +67,9 @@ app.get("/", async (req, res) => {
     }
   });
 
-  // await conversation.remove({});
+  await conversation.remove({});
   // await user.remove({});
-  // await message.remove({});
+  await message.remove({});
 });
 
 const port = process.env.PORT || 3000;

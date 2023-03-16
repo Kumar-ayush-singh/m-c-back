@@ -86,4 +86,19 @@ router.get("/get-all/", async (req, res) => {
   // const newUser = { name, id: _id, email };
   res.status(200).json(user);
 });
+
+
+
+router.post("/set-avatar", async (req, res) => {
+  const user = await User.findById(req.user.userId).exec();
+
+  user.avatar = req.body.avatar;
+  const updatedUser = await user.save();
+
+
+  res.status(200).send(updatedUser.avatar);
+})
+
+
+
 module.exports = router;

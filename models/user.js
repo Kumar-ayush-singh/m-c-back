@@ -24,7 +24,9 @@ const UserSchema = mongoose.Schema({
     minlength: 3,
     maxlength: 80,
   },
-  pic: String,
+  avatar: {
+    type: String,
+  }
 });
 
 UserSchema.pre("save", async function () {
