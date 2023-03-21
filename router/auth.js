@@ -10,6 +10,7 @@ router.post("/sign-up", async (req, res) => {
     console.log("\n\nRoute /auth/sign-up/ :-");
     console.log(`\t>> Request Body >>>>`);
     console.log(req.body);
+    req.body.email = String(req.body.email).toLowerCase();
 
     try{
         const user = await User.create({ ...req.body });
@@ -30,7 +31,12 @@ router.post("/sign-up", async (req, res) => {
             console.log(errors);
         }
         else{
-            errors.msg = e.message;
+            if(e.message.includes("E11000")){
+                errors.msg = "Email already registered";
+            }
+            else{
+                errors.msg = e.message;
+            }
         }
         res.status(500).json(errors);
     }
@@ -42,6 +48,8 @@ router.post("/sign-in", async (req, res) => {
     console.log("\n\nRoute /auth/sign-in/ :-");
     console.log(`\t>> Request Body >>>>`);
     console.log(req.body);
+
+    req.body.email = String(req.body.email).toLowerCase();
 
     const { email, password } = req.body;
 
